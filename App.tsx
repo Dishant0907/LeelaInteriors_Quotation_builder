@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Quotation, EMPTY_CUSTOMER } from './types';
 import QuoteEditor from './components/QuoteEditor';
 import QuotePreview from './components/QuotePreview';
-import { PlusIcon, PrinterIcon, SparklesIcon, ArrowLeftIcon } from './components/ui/Icons';
+import { PlusIcon, PrinterIcon, SparklesIcon, ArrowLeftIcon, DownloadIcon, UploadIcon, TrashIcon } from './components/ui/Icons';
 import { generateCoverLetter } from './services/geminiService';
 
 const STORAGE_KEY = 'moduquote_data_v1';
 
 function App() {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // FIX: Load data immediately during initialization to prevent overwriting with empty array
   const [quotes, setQuotes] = useState<Quotation[]>(() => {
     try {
@@ -45,14 +47,14 @@ function App() {
       notes: "1. 50% Advance payment required.\n2. Delivery within 4-6 weeks.\n3. Goods once sold cannot be returned.",
       status: 'Draft'
     };
-    setQuotes([newQuote, ...quotes]);
+    setQuotes(prev => [newQuote, ...prev]);
     setCurrentQuote(newQuote);
     setViewMode('edit');
   };
 
   const handleUpdateQuote = (updated: Quotation) => {
     setCurrentQuote(updated);
-    setQuotes(quotes.map(q => q.id === updated.id ? updated : q));
+    setQuotes(prev => prev.map(q => q.id === updated.id ? updated : q));
   };
 
   const handleEdit = (quote: Quotation) => {
@@ -60,10 +62,9 @@ function App() {
     setViewMode('edit');
   };
 
-  const handleDelete = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (confirm('Are you sure you want to delete this quote?')) {
-      setQuotes(quotes.filter(q => q.id !== id));
+  const handleDelete = (id: string) => {
+    if (window.confirm('Are you sure you want to delete this quote? This action cannot be undone.')) {
+      setQuotes(prev => prev.filter(q => q.id !== id));
     }
   };
 
@@ -99,21 +100,103 @@ function App() {
     }
   };
 
+  // --- Backup & Restore Functions ---
+  const handleExportData = () => {
+    const dataStr = JSON.stringify(quotes, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    const exportFileDefaultName = `moduquote_backup_${new Date().toLocaleDateString().replace(/\//g, '-')}.json`;
+
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+  };
+
+  const handleImportData = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result;
+        if (typeof content === 'string') {
+          const parsed = JSON.parse(content);
+          
+          if (!Array.isArray(parsed)) {
+            alert("Invalid backup file: The file must contain a list of quotes.");
+            return;
+          }
+
+          if (window.confirm(`Found ${parsed.length} quotes in backup. This will REPLACE your current data. Continue?`)) {
+             setQuotes(parsed);
+             // We can let the useEffect handle the localStorage update, but manual update ensures sync if app closes immediately
+             localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+             alert("Data restored successfully!");
+          }
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Error parsing backup file. Please ensure it is a valid JSON file.");
+      }
+    };
+    
+    reader.onerror = () => {
+      alert("Error reading file");
+    };
+
+    reader.readAsText(file);
+    
+    // Clear input using ref to allow selecting the same file again
+    if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+    }
+  };
+
+  const triggerImport = () => {
+    fileInputRef.current?.click();
+  };
+
   // Dashboard View
   const renderDashboard = () => (
     <div className="max-w-6xl mx-auto p-8">
-      <div className="flex justify-between items-center mb-12">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
         <div>
            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">ModuQuote</h1>
            <p className="text-slate-500 mt-2">Manage your kitchen & wardrobe projects</p>
         </div>
-        <button
-          onClick={createNewQuote}
-          className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-3 rounded-xl shadow-lg shadow-slate-200 flex items-center gap-2 transition-all transform hover:scale-105"
-        >
-          <PlusIcon className="w-5 h-5" />
-          New Quote
-        </button>
+        <div className="flex flex-wrap gap-3">
+          <input 
+            type="file" 
+            ref={fileInputRef}
+            className="hidden" 
+            accept=".json" 
+            onChange={handleImportData} 
+          />
+          <button 
+            onClick={triggerImport}
+            className="bg-white hover:bg-slate-50 text-slate-600 px-4 py-3 rounded-xl border border-gray-200 flex items-center gap-2 text-sm font-medium transition-colors"
+            title="Restore Data from File"
+          >
+            <UploadIcon className="w-5 h-5" />
+            Restore
+          </button>
+          <button 
+            onClick={handleExportData}
+            className="bg-white hover:bg-slate-50 text-slate-600 px-4 py-3 rounded-xl border border-gray-200 flex items-center gap-2 text-sm font-medium transition-colors"
+            title="Backup Data to File"
+          >
+            <DownloadIcon className="w-5 h-5" />
+            Backup
+          </button>
+          <button
+            onClick={createNewQuote}
+            className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-3 rounded-xl shadow-lg shadow-slate-200 flex items-center gap-2 transition-all transform hover:scale-105"
+          >
+            <PlusIcon className="w-5 h-5" />
+            New Quote
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -130,7 +213,7 @@ function App() {
           <div
             key={quote.id}
             onClick={() => handleEdit(quote)}
-            className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-blue-100 transition-all cursor-pointer group relative"
+            className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-blue-100 transition-all cursor-pointer group relative flex flex-col h-full"
           >
             <div className="flex justify-between items-start mb-4">
               <span className={`text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider ${
@@ -147,17 +230,23 @@ function App() {
             </h3>
             <p className="text-sm text-slate-500 mb-6 truncate">#{quote.number}</p>
             
-            <div className="flex justify-between items-end">
+            <div className="flex justify-between items-end mt-auto pt-4">
               <div>
                 <p className="text-[10px] text-slate-400 uppercase font-bold">Total Amount</p>
                 <p className="text-xl font-bold text-slate-900">₹{quote.total.toLocaleString('en-IN')}</p>
               </div>
-              <button
-                onClick={(e) => handleDelete(quote.id, e)}
-                className="text-slate-300 hover:text-red-500 p-2 opacity-0 group-hover:opacity-100 transition-opacity"
+              <div 
+                onClick={(e) => e.stopPropagation()} 
+                className="z-20"
               >
-                Delete
-              </button>
+                <button
+                  onClick={() => handleDelete(quote.id)}
+                  className="text-slate-400 hover:text-red-600 p-2 transition-colors"
+                  title="Delete Quote"
+                >
+                  <TrashIcon className="w-5 h-5" />
+                </button>
+              </div>
             </div>
           </div>
         ))}
