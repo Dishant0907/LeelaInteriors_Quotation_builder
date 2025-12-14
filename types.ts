@@ -17,6 +17,7 @@ export interface LineItem {
     depth: number;
   };
   quantity: number;
+  area?: number; // New field for Sq.Ft area
   unit: Unit;
   rate: number;
   amount: number;
@@ -58,6 +59,7 @@ export const EMPTY_ITEM: LineItem = {
   name: '',
   description: '',
   quantity: 1,
+  area: 0,
   unit: Unit.NOS,
   rate: 0,
   amount: 0

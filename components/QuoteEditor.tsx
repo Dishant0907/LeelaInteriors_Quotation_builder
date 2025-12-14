@@ -36,8 +36,17 @@ const QuoteEditor: React.FC<QuoteEditorProps> = ({ quotation, onUpdate, onBack, 
     const updatedItems = quotation.items.map(item => {
       if (item.id === id) {
         const updatedItem = { ...item, [field]: value };
+        
         // Auto-calculate amount
-        updatedItem.amount = updatedItem.quantity * updatedItem.rate;
+        // If Unit is Sq.Ft, Amount = Qty * Area * Rate
+        // Else, Amount = Qty * Rate
+        if (updatedItem.unit === Unit.SQFT) {
+           const area = updatedItem.area || 0;
+           updatedItem.amount = updatedItem.quantity * area * updatedItem.rate;
+        } else {
+           updatedItem.amount = updatedItem.quantity * updatedItem.rate;
+        }
+
         return updatedItem;
       }
       return item;
@@ -112,7 +121,7 @@ const QuoteEditor: React.FC<QuoteEditorProps> = ({ quotation, onUpdate, onBack, 
                   type="text"
                   value={quotation.customer.name}
                   onChange={(e) => handleCustomerChange('name', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-slate-900 outline-none transition-all"
+                  className="w-full px-3 py-2 bg-white text-slate-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-slate-900 outline-none transition-all"
                   placeholder="e.g. John Doe"
                 />
               </div>
@@ -123,7 +132,7 @@ const QuoteEditor: React.FC<QuoteEditorProps> = ({ quotation, onUpdate, onBack, 
                     type="email"
                     value={quotation.customer.email}
                     onChange={(e) => handleCustomerChange('email', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-900 outline-none"
+                    className="w-full px-3 py-2 bg-white text-slate-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-900 outline-none"
                     placeholder="john@example.com"
                   />
                 </div>
@@ -133,7 +142,7 @@ const QuoteEditor: React.FC<QuoteEditorProps> = ({ quotation, onUpdate, onBack, 
                     type="tel"
                     value={quotation.customer.phone}
                     onChange={(e) => handleCustomerChange('phone', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-900 outline-none"
+                    className="w-full px-3 py-2 bg-white text-slate-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-900 outline-none"
                     placeholder="+1 (555) 000-0000"
                   />
                 </div>
@@ -144,7 +153,7 @@ const QuoteEditor: React.FC<QuoteEditorProps> = ({ quotation, onUpdate, onBack, 
                   value={quotation.customer.address}
                   onChange={(e) => handleCustomerChange('address', e.target.value)}
                   rows={4}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-900 outline-none"
+                  className="w-full px-3 py-2 bg-white text-slate-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-900 outline-none"
                   placeholder="123 Main St..."
                 />
               </div>
@@ -178,7 +187,7 @@ const QuoteEditor: React.FC<QuoteEditorProps> = ({ quotation, onUpdate, onBack, 
               {quotation.items.map((item, index) => (
                 <div key={item.id} className="p-4 rounded-lg border border-gray-200 bg-gray-50/50 hover:border-gray-300 transition-all relative group">
                   <div className="grid grid-cols-12 gap-4 items-start">
-                    {/* Category & Name */}
+                    {/* Category & Name - 4 Columns */}
                     <div className="col-span-12 md:col-span-4 space-y-2">
                        <input
                           type="text"
@@ -192,7 +201,7 @@ const QuoteEditor: React.FC<QuoteEditorProps> = ({ quotation, onUpdate, onBack, 
                             type="text"
                             value={item.name}
                             onChange={(e) => updateItem(item.id, 'name', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-slate-900 outline-none text-sm font-medium"
+                            className="w-full px-3 py-2 bg-white text-slate-900 border border-gray-300 rounded-md focus:ring-1 focus:ring-slate-900 outline-none text-sm font-medium"
                             placeholder="Item Name"
                           />
                         </div>
@@ -201,7 +210,7 @@ const QuoteEditor: React.FC<QuoteEditorProps> = ({ quotation, onUpdate, onBack, 
                             value={item.description}
                             onChange={(e) => updateItem(item.id, 'description', e.target.value)}
                             rows={2}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-slate-900 outline-none text-xs text-slate-600 resize-none"
+                            className="w-full px-3 py-2 bg-white text-slate-900 border border-gray-300 rounded-md focus:ring-1 focus:ring-slate-900 outline-none text-xs text-slate-600 resize-none"
                             placeholder="Description..."
                           />
                           <button
@@ -215,8 +224,8 @@ const QuoteEditor: React.FC<QuoteEditorProps> = ({ quotation, onUpdate, onBack, 
                         </div>
                     </div>
 
-                    {/* Dimensions & Unit */}
-                    <div className="col-span-12 md:col-span-3 space-y-2">
+                    {/* Quantity, Area & Unit - 4 Columns */}
+                    <div className="col-span-12 md:col-span-4 space-y-2">
                       <div className="flex gap-2">
                          <div className="flex-1">
                             <label className="text-[10px] uppercase text-slate-400 font-bold">Qty</label>
@@ -225,15 +234,30 @@ const QuoteEditor: React.FC<QuoteEditorProps> = ({ quotation, onUpdate, onBack, 
                               min="1"
                               value={item.quantity}
                               onChange={(e) => updateItem(item.id, 'quantity', parseFloat(e.target.value) || 0)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-slate-900 outline-none text-sm"
+                              className="w-full px-3 py-2 bg-white text-slate-900 border border-gray-300 rounded-md focus:ring-1 focus:ring-slate-900 outline-none text-sm"
                             />
                          </div>
+
+                         {/* Conditional Area Input */}
+                         {item.unit === Unit.SQFT && (
+                             <div className="flex-1">
+                                <label className="text-[10px] uppercase text-slate-400 font-bold">Area (Sq.Ft)</label>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={item.area || 0}
+                                  onChange={(e) => updateItem(item.id, 'area', parseFloat(e.target.value) || 0)}
+                                  className="w-full px-3 py-2 bg-white text-slate-900 border border-gray-300 rounded-md focus:ring-1 focus:ring-slate-900 outline-none text-sm"
+                                />
+                             </div>
+                         )}
+
                          <div className="flex-1">
                             <label className="text-[10px] uppercase text-slate-400 font-bold">Unit</label>
                             <select
                               value={item.unit}
                               onChange={(e) => updateItem(item.id, 'unit', e.target.value as Unit)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-slate-900 outline-none text-sm"
+                              className="w-full px-3 py-2 bg-white text-slate-900 border border-gray-300 rounded-md focus:ring-1 focus:ring-slate-900 outline-none text-sm"
                             >
                               {Object.values(Unit).map(u => <option key={u} value={u}>{u}</option>)}
                             </select>
@@ -241,32 +265,32 @@ const QuoteEditor: React.FC<QuoteEditorProps> = ({ quotation, onUpdate, onBack, 
                       </div>
                     </div>
 
-                    {/* Rate & Amount */}
-                    <div className="col-span-12 md:col-span-4 space-y-2">
+                    {/* Rate & Amount - 3 Columns */}
+                    <div className="col-span-12 md:col-span-3 space-y-2">
                        <div className="flex gap-2">
                           <div className="flex-1">
                             <label className="text-[10px] uppercase text-slate-400 font-bold">Rate</label>
                             <div className="relative">
-                               <span className="absolute left-3 top-2 text-slate-400 text-sm">$</span>
+                               <span className="absolute left-3 top-2 text-slate-400 text-sm">₹</span>
                                <input
                                 type="number"
                                 min="0"
                                 value={item.rate}
                                 onChange={(e) => updateItem(item.id, 'rate', parseFloat(e.target.value) || 0)}
-                                className="w-full pl-6 pr-3 py-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-slate-900 outline-none text-sm"
+                                className="w-full pl-6 pr-3 py-2 bg-white text-slate-900 border border-gray-300 rounded-md focus:ring-1 focus:ring-slate-900 outline-none text-sm"
                               />
                             </div>
                           </div>
                           <div className="flex-1">
                              <label className="text-[10px] uppercase text-slate-400 font-bold">Amount</label>
                              <div className="w-full px-3 py-2 bg-slate-100 rounded-md text-sm font-semibold text-slate-700 border border-transparent">
-                               ${item.amount.toLocaleString()}
+                               ₹{item.amount.toLocaleString('en-IN')}
                              </div>
                           </div>
                        </div>
                     </div>
 
-                    {/* Delete */}
+                    {/* Delete - 1 Column */}
                     <div className="col-span-12 md:col-span-1 flex justify-center pt-6">
                       <button
                         onClick={() => removeItem(item.id)}
@@ -300,7 +324,7 @@ const QuoteEditor: React.FC<QuoteEditorProps> = ({ quotation, onUpdate, onBack, 
             <div className="bg-gray-50 p-6 rounded-lg border border-gray-100 space-y-4">
               <div className="flex justify-between text-sm">
                 <span className="text-slate-600">Subtotal ({quotation.items.length} items)</span>
-                <span className="font-medium">${quotation.subtotal.toLocaleString()}</span>
+                <span className="font-medium">₹{quotation.subtotal.toLocaleString('en-IN')}</span>
               </div>
               <div className="flex justify-between text-sm items-center">
                 <span className="text-slate-600">Discount Amount</span>
@@ -311,7 +335,7 @@ const QuoteEditor: React.FC<QuoteEditorProps> = ({ quotation, onUpdate, onBack, 
                     const val = parseFloat(e.target.value) || 0;
                     onUpdate(recalculate({ ...quotation, discount: val }));
                   }}
-                  className="w-32 px-2 py-1 text-right border border-gray-300 rounded-md text-sm"
+                  className="w-32 px-2 py-1 bg-white text-slate-900 border border-gray-300 rounded-md text-sm text-right"
                 />
               </div>
               <div className="flex justify-between text-sm items-center">
@@ -323,12 +347,12 @@ const QuoteEditor: React.FC<QuoteEditorProps> = ({ quotation, onUpdate, onBack, 
                     const val = parseFloat(e.target.value) || 0;
                     onUpdate(recalculate({ ...quotation, taxRate: val }));
                   }}
-                  className="w-32 px-2 py-1 text-right border border-gray-300 rounded-md text-sm"
+                  className="w-32 px-2 py-1 bg-white text-slate-900 border border-gray-300 rounded-md text-sm text-right"
                 />
               </div>
               <div className="pt-4 border-t border-gray-200 flex justify-between items-center">
                 <span className="text-lg font-bold text-slate-900">Total Payable</span>
-                <span className="text-2xl font-bold text-slate-900">${quotation.total.toLocaleString()}</span>
+                <span className="text-2xl font-bold text-slate-900">₹{quotation.total.toLocaleString('en-IN')}</span>
               </div>
             </div>
 
@@ -338,7 +362,7 @@ const QuoteEditor: React.FC<QuoteEditorProps> = ({ quotation, onUpdate, onBack, 
                 value={quotation.notes}
                 onChange={(e) => onUpdate({ ...quotation, notes: e.target.value })}
                 rows={6}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-900 outline-none text-sm"
+                className="w-full px-3 py-2 bg-white text-slate-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-900 outline-none text-sm"
                 placeholder="Payment terms, warranty info, delivery schedule..."
               />
             </div>

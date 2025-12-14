@@ -77,8 +77,28 @@ function App() {
     setGeneratingLetter(false);
   };
 
-  const handlePrint = () => {
-    window.print();
+  const handleDownloadPdf = () => {
+    const element = document.getElementById('quote-preview-content');
+    if (!element) return;
+
+    // Use specific options to ensure correct rendering without weird offsets
+    const opt = {
+      margin: 0,
+      filename: `Quote_${currentQuote?.number || 'Draft'}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      // scrollY: 0 is crucial to prevent the PDF from rendering with window scroll offset
+      html2canvas: { scale: 2, useCORS: true, scrollY: 0, scrollX: 0 },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    // @ts-ignore
+    if (window.html2pdf) {
+      // @ts-ignore
+      window.html2pdf().set(opt).from(element).save();
+    } else {
+      alert("PDF generator is loading, please try again in a moment or use Print > Save as PDF.");
+      window.print();
+    }
   };
 
   // Dashboard View
@@ -128,7 +148,7 @@ function App() {
             <div className="flex justify-between items-end">
               <div>
                 <p className="text-[10px] text-slate-400 uppercase font-bold">Total Amount</p>
-                <p className="text-xl font-bold text-slate-900">${quote.total.toLocaleString()}</p>
+                <p className="text-xl font-bold text-slate-900">₹{quote.total.toLocaleString('en-IN')}</p>
               </div>
               <button
                 onClick={(e) => handleDelete(quote.id, e)}
@@ -182,11 +202,11 @@ function App() {
                     {generatingLetter ? 'Writing...' : 'AI Cover Letter'}
                   </button>
                 <button
-                  onClick={handlePrint}
+                  onClick={handleDownloadPdf}
                   className="flex items-center gap-2 px-6 py-2 bg-blue-600 rounded-lg hover:bg-blue-500 font-bold shadow-lg shadow-blue-900/50"
                 >
                   <PrinterIcon className="w-5 h-5" />
-                  Print / Save PDF
+                  Download PDF
                 </button>
               </div>
             </div>
