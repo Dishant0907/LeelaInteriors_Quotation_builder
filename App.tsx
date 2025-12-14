@@ -8,25 +8,23 @@ import { generateCoverLetter } from './services/geminiService';
 const STORAGE_KEY = 'moduquote_data_v1';
 
 function App() {
-  const [quotes, setQuotes] = useState<Quotation[]>([]);
+  // FIX: Load data immediately during initialization to prevent overwriting with empty array
+  const [quotes, setQuotes] = useState<Quotation[]>(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      return stored ? JSON.parse(stored) : [];
+    } catch (e) {
+      console.error("Failed to parse stored quotes", e);
+      return [];
+    }
+  });
+
   const [currentQuote, setCurrentQuote] = useState<Quotation | null>(null);
   const [viewMode, setViewMode] = useState<'dashboard' | 'edit' | 'preview'>('dashboard');
   const [aiCoverLetter, setAiCoverLetter] = useState('');
   const [generatingLetter, setGeneratingLetter] = useState(false);
 
-  // Load from local storage on mount
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      try {
-        setQuotes(JSON.parse(stored));
-      } catch (e) {
-        console.error("Failed to parse stored quotes");
-      }
-    }
-  }, []);
-
-  // Save to local storage on change
+  // Save to local storage whenever quotes change
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(quotes));
   }, [quotes]);
