@@ -14,11 +14,11 @@ export const generateCoverLetter = async (quotation: Quotation): Promise<string>
     const model = "gemini-2.5-flash";
     
     const prompt = `
-      Act as a professional interior design sales consultant.
+      Act as a professional interior design sales consultant in India.
       Write a polite, minimalist, and persuasive cover letter email for a quotation.
       
       Client Name: ${quotation.customer.name}
-      Project Total: ${quotation.total}
+      Project Total: ₹${quotation.total.toLocaleString('en-IN')}
       
       Key Items Included:
       ${quotation.items.map(i => `- ${i.name} (${i.category})`).slice(0, 5).join('\n')}
@@ -48,7 +48,7 @@ export const enhanceItemDescription = async (itemName: string, category: string)
       Item: ${itemName}
       Category: ${category}
       
-      Keep it under 30 words. Focus on durability and finish.
+      Keep it under 30 words. Focus on durability and finish (e.g. BWR ply, Laminate finish, Soft close hinges).
     `;
 
     const response = await ai.models.generateContent({

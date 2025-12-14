@@ -322,6 +322,19 @@ const QuoteEditor: React.FC<QuoteEditorProps> = ({ quotation, onUpdate, onBack, 
           <div className="p-8 max-w-2xl mx-auto">
             <h3 className="text-lg font-semibold text-slate-900 mb-6">Quote Summary</h3>
             <div className="bg-gray-50 p-6 rounded-lg border border-gray-100 space-y-4">
+               <div className="flex justify-between text-sm items-center">
+                <span className="text-slate-600">Status</span>
+                <select 
+                  value={quotation.status}
+                  onChange={(e) => onUpdate({ ...quotation, status: e.target.value as any })}
+                  className="w-32 px-2 py-1 bg-white text-slate-900 border border-gray-300 rounded-md text-sm"
+                >
+                   <option value="Draft">Draft</option>
+                   <option value="Sent">Sent</option>
+                   <option value="Approved">Approved</option>
+                   <option value="Paid">Paid</option>
+                </select>
+              </div>
               <div className="flex justify-between text-sm">
                 <span className="text-slate-600">Subtotal ({quotation.items.length} items)</span>
                 <span className="font-medium">₹{quotation.subtotal.toLocaleString('en-IN')}</span>

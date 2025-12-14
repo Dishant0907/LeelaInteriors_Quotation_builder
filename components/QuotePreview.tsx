@@ -15,19 +15,26 @@ const QuotePreview: React.FC<QuotePreviewProps> = ({ quotation }) => {
     return acc;
   }, {} as Record<string, typeof quotation.items>);
 
+  // Determine if this is a Quote or an Invoice based on status
+  const isInvoice = ['Approved', 'Paid'].includes(quotation.status);
+  const docTitle = isInvoice ? 'TAX INVOICE' : 'QUOTATION';
+  const dateLabel = isInvoice ? 'Invoice Date:' : 'Date:';
+
   return (
     <div id="quote-preview-content" className="bg-white p-8 max-w-[210mm] mx-auto min-h-[297mm] shadow-lg print:shadow-none print:w-full print:max-w-none print:m-0 print:p-8">
       {/* Header */}
       <div className="flex justify-between items-start mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">QUOTATION</h1>
-          <p className="text-slate-500 mt-1 text-sm">Reference: #{quotation.number}</p>
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">{docTitle}</h1>
+          <p className="text-slate-500 mt-1 text-sm">#{quotation.number}</p>
+          {isInvoice && <span className="inline-block mt-2 px-2 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-700 uppercase">{quotation.status}</span>}
         </div>
         <div className="text-right">
           <div className="text-2xl font-bold text-accent">ModuQuote</div>
           <p className="text-sm text-slate-500 mt-1">Premium Modular Interiors</p>
           <p className="text-sm text-slate-500">123 Design Avenue, Creative City</p>
           <p className="text-sm text-slate-500">contact@moduquote.com</p>
+          <p className="text-sm text-slate-500">GSTIN: 29ABCDE1234F1Z5</p>
         </div>
       </div>
 
@@ -46,13 +53,15 @@ const QuotePreview: React.FC<QuotePreviewProps> = ({ quotation }) => {
           <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Details</h3>
           <div className="space-y-1">
             <div className="flex justify-end">
-              <span className="text-slate-500 text-sm w-24">Date:</span>
+              <span className="text-slate-500 text-sm w-24">{dateLabel}</span>
               <span className="text-slate-900 text-sm font-medium">{quotation.date}</span>
             </div>
-            <div className="flex justify-end">
-              <span className="text-slate-500 text-sm w-24">Valid Until:</span>
-              <span className="text-slate-900 text-sm font-medium">{quotation.validUntil}</span>
-            </div>
+            {!isInvoice && (
+              <div className="flex justify-end">
+                <span className="text-slate-500 text-sm w-24">Valid Until:</span>
+                <span className="text-slate-900 text-sm font-medium">{quotation.validUntil}</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -125,7 +134,7 @@ const QuotePreview: React.FC<QuotePreviewProps> = ({ quotation }) => {
              </div>
           )}
           <div className="flex justify-between py-1.5 text-sm text-slate-600">
-            <span>Tax ({quotation.taxRate}%)</span>
+            <span>GST ({quotation.taxRate}%)</span>
             <span className="font-medium">₹{quotation.taxAmount.toLocaleString('en-IN')}</span>
           </div>
           <div className="flex justify-between py-3 border-t-2 border-slate-900 mt-2">

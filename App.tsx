@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Quotation, EMPTY_CUSTOMER } from './types';
 import QuoteEditor from './components/QuoteEditor';
 import QuotePreview from './components/QuotePreview';
-import { PlusIcon, PrinterIcon, EditIcon, SparklesIcon, ArrowLeftIcon } from './components/ui/Icons';
+import { PlusIcon, PrinterIcon, SparklesIcon, ArrowLeftIcon } from './components/ui/Icons';
 import { generateCoverLetter } from './services/geminiService';
 
 const STORAGE_KEY = 'moduquote_data_v1';
@@ -40,7 +40,7 @@ function App() {
       customer: { ...EMPTY_CUSTOMER },
       items: [],
       subtotal: 0,
-      taxRate: 10,
+      taxRate: 18, // Default GST usually 18% for services/furniture in many regions
       taxAmount: 0,
       discount: 0,
       total: 0,
@@ -135,7 +135,11 @@ function App() {
             className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md hover:border-blue-100 transition-all cursor-pointer group relative"
           >
             <div className="flex justify-between items-start mb-4">
-              <span className="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">
+              <span className={`text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider ${
+                quote.status === 'Paid' ? 'bg-green-100 text-green-700' :
+                quote.status === 'Approved' ? 'bg-blue-100 text-blue-700' :
+                'bg-slate-100 text-slate-600'
+              }`}>
                 {quote.status}
               </span>
               <span className="text-slate-400 text-xs">{quote.date}</span>
